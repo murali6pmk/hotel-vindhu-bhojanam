@@ -10,6 +10,7 @@ import About from './components/About';
 import Footer from './components/Footer';
 import FloatingLeaves from './components/FloatingLeaves';
 import AdminApp from './admin/AdminApp';
+import DownloadPage from './admin/DownloadPage';
 
 function MainSite() {
   const [activeSection, setActiveSection] = useState('overview');
@@ -51,6 +52,7 @@ export default function App() {
         <Route path="/" element={<MainSite />} />
         <Route path="/admin" element={<AdminApp />} />
         <Route path="/admin/*" element={<AdminApp />} />
+        <Route path="/download" element={<DownloadPage />} />
       </Routes>
     </BrowserRouter>
   );
