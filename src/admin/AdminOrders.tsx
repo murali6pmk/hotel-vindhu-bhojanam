@@ -20,10 +20,8 @@ export default function AdminOrders({ onRefresh }: Props) {
     try {
       setLoading(true);
       const [o, m] = await Promise.all([getOrders(), getMenuItems()]);
-      setOrders(o);
-      setMenuItems(m);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+      setOrders(o); setMenuItems(m);
+    } catch (e) { console.error(e); } finally { setLoading(false); }
   };
 
   useEffect(() => { load(); }, []);
@@ -82,9 +80,51 @@ export default function AdminOrders({ onRefresh }: Props) {
 
   const totalUnpaid = orders.filter(o => o.paymentStatus === 'unpaid' && o.status !== 'cancelled').reduce((s, o) => s + o.total, 0);
   const unpaidCount = orders.filter(o => o.paymentStatus === 'unpaid' && o.status !== 'cancelled').length;
+  const pendingUTR = orders.filter(o => o.paymentStatus === 'pending_verification');
 
   return (
     <div className="space-y-6">
+      {/* UTR Verification Alert */}
+      {pendingUTR.length > 0 && (
+        <div className="rounded-2xl p-4 border" style={{ background: 'rgba(212,160,23,0.15)', borderColor: 'rgba(212,160,23,0.4)' }}>
+          <div className="flex items-center gap-3 mb-3">
+            <span className="text-2xl">💳</span>
+            <div>
+              <div className="text-yellow-400 font-semibold">{pendingUTR.length} UPI Payment{pendingUTR.length > 1 ? 's' : ''} Need Verification</div>
+              <div className="text-cream/60 text-sm">Customers paid and submitted UTR numbers. Verify below.</div>
+            </div>
+          </div>
+          <div className="space-y-2">
+            {pendingUTR.map(order => (
+              <div key={order.id} className="flex flex-wrap items-center gap-3 p-3 rounded-xl" style={{ background: 'rgba(0,0,0,0.3)' }}>
+                <div className="flex-1 min-w-0">
+                  <span className="text-gold font-mono text-sm">{order.id}</span>
+                  <span className="text-cream/70 text-sm ml-2">{order.customerName}</span>
+                  <span className="text-cream font-bold ml-2">₹{order.total}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-cream/50 text-xs">UTR:</span>
+                  <span className="text-gold font-mono text-sm">{(order as any).utrNumber || 'N/A'}</span>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => handleUpdatePayment(order.id, 'paid', 'upi')}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-white text-xs font-semibold"
+                    style={{ background: 'rgba(58,107,53,0.5)', border: '1px solid rgba(58,107,53,0.7)' }}>
+                    <CheckCircle size={13} /> Verify Paid
+                  </button>
+                  <button onClick={() => handleUpdatePayment(order.id, 'unpaid', '')}
+                    className="px-3 py-1.5 rounded-xl text-red-400 text-xs"
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Unpaid alert */}
       {totalUnpaid > 0 && (
         <div className="rounded-2xl p-4 flex items-center justify-between"
           style={{ background: 'rgba(232,102,10,0.15)', border: '1px solid rgba(232,102,10,0.3)' }}>
@@ -100,6 +140,7 @@ export default function AdminOrders({ onRefresh }: Props) {
         </div>
       )}
 
+      {/* Toolbar */}
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-48">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-cream/40" />
@@ -114,7 +155,7 @@ export default function AdminOrders({ onRefresh }: Props) {
           <option value="all">All Payments</option>
           <option value="paid">Paid</option>
           <option value="unpaid">Unpaid</option>
-          <option value="partial">Partial</option>
+          <option value="pending_verification">UTR Pending</option>
         </select>
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
           className="px-4 py-2.5 rounded-xl text-cream text-sm outline-none"
@@ -132,6 +173,7 @@ export default function AdminOrders({ onRefresh }: Props) {
         </button>
       </div>
 
+      {/* Orders list */}
       {loading ? (
         <div className="flex items-center justify-center h-48">
           <div className="w-8 h-8 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
@@ -149,6 +191,9 @@ export default function AdminOrders({ onRefresh }: Props) {
                     <span className="text-gold font-mono font-bold text-sm">{order.id}</span>
                     <StatusBadge status={order.status} />
                     <PaymentBadge status={order.paymentStatus} />
+                    {order.paymentMethod === 'upi' && order.paymentStatus === 'paid' && (
+                      <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(58,107,53,0.2)', color: '#4ade80' }}>Paid via UPI</span>
+                    )}
                   </div>
                   <div className="text-cream font-medium mt-1">{order.customerName} · {order.tableNo}</div>
                   <div className="text-cream/40 text-xs">{order.customerPhone} · {new Date(order.createdAt).toLocaleString('en-IN')}</div>
@@ -176,11 +221,21 @@ export default function AdminOrders({ onRefresh }: Props) {
                       </div>
                     </div>
                   </div>
+
+                  {/* UTR Number display */}
+                  {(order as any).utrNumber && (
+                    <div className="px-3 py-2 rounded-xl text-sm" style={{ background: 'rgba(212,160,23,0.1)', border: '1px solid rgba(212,160,23,0.2)' }}>
+                      <span className="text-gold/70 text-xs">UTR / Transaction ID: </span>
+                      <span className="text-gold font-mono">{(order as any).utrNumber}</span>
+                    </div>
+                  )}
+
                   {order.notes && (
                     <div className="px-3 py-2 rounded-lg text-sm text-cream/60" style={{ background: 'rgba(255,255,255,0.05)' }}>
                       📝 {order.notes}
                     </div>
                   )}
+
                   <div className="flex flex-wrap gap-2">
                     <select value={order.status} onChange={e => handleUpdateStatus(order.id, e.target.value as Order['status'])}
                       className="px-3 py-2 rounded-xl text-cream text-sm outline-none"
@@ -190,7 +245,25 @@ export default function AdminOrders({ onRefresh }: Props) {
                       <option value="served">✅ Served</option>
                       <option value="cancelled">❌ Cancelled</option>
                     </select>
-                    {order.paymentStatus !== 'paid' && (
+
+                    {/* UTR Pending — show verify/reject */}
+                    {order.paymentStatus === 'pending_verification' && (
+                      <>
+                        <button onClick={() => handleUpdatePayment(order.id, 'paid', 'upi')}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-white text-sm"
+                          style={{ background: 'rgba(58,107,53,0.4)', border: '1px solid rgba(58,107,53,0.6)' }}>
+                          <CheckCircle size={14} /> Verify Paid
+                        </button>
+                        <button onClick={() => handleUpdatePayment(order.id, 'unpaid', '')}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-red-400 text-sm"
+                          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                          Reject UTR
+                        </button>
+                      </>
+                    )}
+
+                    {/* Unpaid — show cash/upi paid buttons */}
+                    {order.paymentStatus === 'unpaid' && (
                       <>
                         <button onClick={() => handleUpdatePayment(order.id, 'paid', 'cash')}
                           className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-white text-sm"
@@ -204,6 +277,7 @@ export default function AdminOrders({ onRefresh }: Props) {
                         </button>
                       </>
                     )}
+
                     {order.paymentStatus === 'paid' && (
                       <button onClick={() => handleUpdatePayment(order.id, 'unpaid', '')}
                         className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-cream/60 text-sm"
@@ -211,6 +285,7 @@ export default function AdminOrders({ onRefresh }: Props) {
                         Mark Unpaid
                       </button>
                     )}
+
                     <button onClick={() => setEditOrder(order)}
                       className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-cream/60 text-sm hover:text-gold"
                       style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -265,10 +340,8 @@ function NewOrderModal({ menuItems, onClose, onSave }: { menuItems: MenuItem[]; 
     if (!customerName || !tableNo || selectedItems.length === 0) return;
     setSaving(true);
     const order: Order = {
-      id: generateId('ORD'),
-      customerName, customerPhone, tableNo, notes,
-      items: selectedItems, total,
-      status: 'pending', paymentStatus: 'unpaid', paymentMethod: '',
+      id: generateId('ORD'), customerName, customerPhone, tableNo, notes,
+      items: selectedItems, total, status: 'pending', paymentStatus: 'unpaid', paymentMethod: '',
       createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
     };
     await onSave(order);
@@ -300,9 +373,9 @@ function NewOrderModal({ menuItems, onClose, onSave }: { menuItems: MenuItem[]; 
               style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(212,160,23,0.2)' }} placeholder="T-3, Takeaway..." />
           </div>
           <div className="flex gap-2 flex-wrap">
-            {['meals','tiffin','dosa','beverages'].map(c => (
+            {['meals', 'tiffin', 'dosa', 'beverages'].map(c => (
               <button key={c} onClick={() => setActiveCategory(c)}
-                className={`px-3 py-1.5 rounded-full text-xs capitalize ${ activeCategory === c ? 'text-white' : 'text-cream/60 border border-white/20' }`}
+                className={`px-3 py-1.5 rounded-full text-xs capitalize ${activeCategory === c ? 'text-white' : 'text-cream/60 border border-white/20'}`}
                 style={activeCategory === c ? { background: 'linear-gradient(135deg, #e8660a, #d4a017)' } : {}}>{c}</button>
             ))}
           </div>
@@ -371,17 +444,12 @@ function EditOrderModal({ order, onClose, onSave }: { order: Order; onClose: () 
     <Modal title={`Edit Order ${order.id}`} onClose={onClose}>
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          {[
-            { label: 'Customer Name', key: 'customerName', placeholder: '' },
-            { label: 'Phone', key: 'customerPhone', placeholder: '' },
-            { label: 'Table No', key: 'tableNo', placeholder: '' },
-          ].map(({ label, key, placeholder }) => (
-            <div key={key} className={key === 'tableNo' ? '' : ''}>
+          {[{ label: 'Customer Name', key: 'customerName' }, { label: 'Phone', key: 'customerPhone' }, { label: 'Table No', key: 'tableNo' }].map(({ label, key }) => (
+            <div key={key}>
               <label className="text-cream/60 text-xs mb-1 block">{label}</label>
               <input value={(data as any)[key]} onChange={e => setData({ ...data, [key]: e.target.value })}
                 className="w-full px-3 py-2.5 rounded-xl text-cream text-sm outline-none"
-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(212,160,23,0.2)' }}
-                placeholder={placeholder} />
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(212,160,23,0.2)' }} />
             </div>
           ))}
           <div>
@@ -391,7 +459,7 @@ function EditOrderModal({ order, onClose, onSave }: { order: Order; onClose: () 
               style={{ background: 'rgba(44,26,14,0.9)', border: '1px solid rgba(212,160,23,0.2)' }}>
               <option value="unpaid">Unpaid</option>
               <option value="paid">Paid</option>
-              <option value="partial">Partial</option>
+              <option value="pending_verification">UTR Pending</option>
             </select>
           </div>
           <div>

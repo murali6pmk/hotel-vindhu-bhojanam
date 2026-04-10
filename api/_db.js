@@ -11,10 +11,7 @@ export function getSupabase() {
   return supabase;
 }
 
-export async function seedDefaults() {
-  const db = getSupabase();
-
-  // Seed credentials if empty
+export async function seedDefaults() {\n  const db = getSupabase();\n\n  // Seed payment_settings if empty (table must exist in Supabase)\n  try {\n    const psRes = await db.from('payment_settings').select('*', { count: 'exact', head: true });\n    if ((psRes.count || 0) === 0) {\n      await db.from('payment_settings').insert({ upi_id: '', merchant_name: 'Hotel Vindhu Bhojanam', tax_percent: 0, delivery_fee: 0 });\n    }\n  } catch (_) { /* table may not exist yet */ }\n\n  // Seed credentials if empty
   const credRes = await db.from('credentials').select('*', { count: 'exact', head: true });
   if ((credRes.count || 0) === 0) {
     await db.from('credentials').insert({
@@ -60,6 +57,6 @@ export function toOrder(r) {
     id: r.id, customerName: r.customer_name, customerPhone: r.customer_phone,
     tableNo: r.table_no, items: r.items || [], total: Number(r.total),
     status: r.status, paymentStatus: r.payment_status, paymentMethod: r.payment_method,
-    notes: r.notes, createdAt: r.created_at, updatedAt: r.updated_at,
+    utrNumber: r.utr_number || '', notes: r.notes, createdAt: r.created_at, updatedAt: r.updated_at,
   };
 }

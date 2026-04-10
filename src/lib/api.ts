@@ -1,4 +1,4 @@
-// API client — talks to Vercel serverless functions backed by PostgreSQL
+// API client — talks to Vercel serverless functions backed by Supabase PostgreSQL
 
 export type MenuItem = {
   id: string;
@@ -12,6 +12,11 @@ export type MenuItem = {
   available: boolean;
 };
 
+export type CartItem = {
+  item: MenuItem;
+  qty: number;
+};
+
 export type Order = {
   id: string;
   customerName: string;
@@ -20,11 +25,12 @@ export type Order = {
   items: { itemId: string; itemName: string; qty: number; price: number }[];
   total: number;
   status: 'pending' | 'preparing' | 'served' | 'cancelled';
-  paymentStatus: 'unpaid' | 'paid' | 'partial';
+  paymentStatus: 'unpaid' | 'paid' | 'partial' | 'pending_verification';
   paymentMethod: 'cash' | 'upi' | 'card' | '';
+  utrNumber?: string;
+  notes: string;
   createdAt: string;
   updatedAt: string;
-  notes: string;
 };
 
 export type AdminCredentials = {
@@ -32,6 +38,13 @@ export type AdminCredentials = {
   password: string;
   owner_name: string;
   email: string;
+};
+
+export type PaymentSettings = {
+  upi_id: string;
+  merchant_name: string;
+  tax_percent: number;
+  delivery_fee: number;
 };
 
 const BASE = '/api';
@@ -50,44 +63,25 @@ async function http<T>(url: string, options?: RequestInit): Promise<T> {
 
 // ---- Auth ----
 export async function login(username: string, password: string) {
-  return http<{ ok: boolean; owner?: string; error?: string }>(
-    `${BASE}/auth/login`,
-    { method: 'POST', body: JSON.stringify({ username, password }) }
-  );
+  return http<{ ok: boolean; owner?: string; error?: string }>(`${BASE}/auth/login`, { method: 'POST', body: JSON.stringify({ username, password }) });
 }
-
 export async function getCredentials() {
-  return http<{ username: string; owner_name: string; email: string }>(
-    `${BASE}/auth/credentials`
-  );
+  return http<{ username: string; owner_name: string; email: string }>(`${BASE}/auth/credentials`);
 }
-
 export async function saveCredentials(creds: AdminCredentials) {
-  return http<{ ok: boolean }>(
-    `${BASE}/auth/credentials`,
-    { method: 'PUT', body: JSON.stringify(creds) }
-  );
+  return http<{ ok: boolean }>(`${BASE}/auth/credentials`, { method: 'PUT', body: JSON.stringify(creds) });
 }
 
 // ---- Menu ----
 export async function getMenuItems(): Promise<MenuItem[]> {
   return http<MenuItem[]>(`${BASE}/menu`);
 }
-
 export async function saveMenuItem(item: MenuItem) {
-  return http<{ ok: boolean }>(
-    `${BASE}/menu`,
-    { method: 'POST', body: JSON.stringify(item) }
-  );
+  return http<{ ok: boolean }>(`${BASE}/menu`, { method: 'POST', body: JSON.stringify(item) });
 }
-
 export async function updateMenuItem(id: string, item: Partial<MenuItem>) {
-  return http<{ ok: boolean }>(
-    `${BASE}/menu/${id}`,
-    { method: 'PUT', body: JSON.stringify(item) }
-  );
+  return http<{ ok: boolean }>(`${BASE}/menu/${id}`, { method: 'PUT', body: JSON.stringify(item) });
 }
-
 export async function deleteMenuItem(id: string) {
   return http<{ ok: boolean }>(`${BASE}/menu/${id}`, { method: 'DELETE' });
 }
@@ -96,38 +90,27 @@ export async function deleteMenuItem(id: string) {
 export async function getOrders(): Promise<Order[]> {
   return http<Order[]>(`${BASE}/orders`);
 }
-
 export async function createOrder(order: Order) {
-  return http<{ ok: boolean }>(
-    `${BASE}/orders`,
-    { method: 'POST', body: JSON.stringify(order) }
-  );
+  return http<{ ok: boolean }>(`${BASE}/orders`, { method: 'POST', body: JSON.stringify(order) });
 }
-
 export async function updateOrder(id: string, data: Partial<Order>) {
-  return http<{ ok: boolean }>(
-    `${BASE}/orders/${id}`,
-    { method: 'PUT', body: JSON.stringify(data) }
-  );
+  return http<{ ok: boolean }>(`${BASE}/orders/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 }
-
 export async function deleteOrder(id: string) {
   return http<{ ok: boolean }>(`${BASE}/orders/${id}`, { method: 'DELETE' });
 }
 
-// ---- Settings / UPI ----
-export type UpiSettings = {
-  upi_id: string;
-  upi_name: string;
-  upi_note: string;
-};
-
-export async function getSettings(): Promise<UpiSettings> {
-  return http<UpiSettings>(`${BASE}/settings`);
+// ---- Payment Settings ----
+export async function getPaymentSettings(): Promise<PaymentSettings> {
+  return http<PaymentSettings>(`${BASE}/payment-settings`);
+}
+export async function savePaymentSettings(settings: PaymentSettings) {
+  return http<{ ok: boolean }>(`${BASE}/payment-settings`, { method: 'POST', body: JSON.stringify(settings) });
 }
 
-export async function saveSettings(settings: UpiSettings) {
-  return http<{ ok: boolean }>(`${BASE}/settings`, { method: 'PUT', body: JSON.stringify(settings) });
+// ---- UTR Verification ----
+export async function submitUTR(order_id: string, utr_number: string) {
+  return http<{ ok: boolean; message: string }>(`${BASE}/verify-utr`, { method: 'POST', body: JSON.stringify({ order_id, utr_number }) });
 }
 
 // ---- Helpers ----
