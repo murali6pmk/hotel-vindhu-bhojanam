@@ -18,20 +18,48 @@ export default async function handler(req, res) {
 
   try {
     const db = createClient(url, key);
-    // Try to query credentials table
-    const { error } = await db.from('credentials').select('id').limit(1);
+
+    // Check if credentials table exists
+    const { data, error } = await db.from('credentials').select('id').limit(1);
+
     if (error) {
+      if (error.code === 'PGRST205') {
+        return res.status(200).json({
+          ok: false,
+          database: 'tables_missing',
+          message: 'Tables not created yet. Run the SQL script in Supabase SQL Editor.'
+        });
+      }
+      if (error.code === '42501') {
+        return res.status(200).json({
+          ok: false,
+          database: 'rls_blocked',
+          message: 'Row Level Security is blocking access. Run the SQL fix in Supabase.'
+        });
+      }
       return res.status(200).json({
         ok: false,
-        database: 'tables_missing',
-        message: 'Connected to Supabase but tables not created yet. Run the SQL setup script.'
+        database: 'error',
+        message: error.message
       });
     }
+
+    // Check if admin credentials exist
+    const { data: creds } = await db.from('credentials').select('username').limit(1);
+    if (!creds || creds.length === 0) {
+      return res.status(200).json({
+        ok: false,
+        database: 'no_credentials',
+        message: 'Tables exist but admin user not created. Run the SQL fix.'
+      });
+    }
+
     return res.status(200).json({
       ok: true,
       database: 'connected',
       message: 'Supabase PostgreSQL connected and ready ✔'
     });
+
   } catch (err) {
     return res.status(200).json({
       ok: false,

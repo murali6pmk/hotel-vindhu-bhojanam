@@ -7,7 +7,9 @@ interface HealthStatus {
   message: string;
 }
 
-const SQL_SCRIPT = `CREATE TABLE IF NOT EXISTS credentials (
+const SQL_SCRIPT = `-- PASTE THIS IN SUPABASE SQL EDITOR AND CLICK RUN ▶
+
+CREATE TABLE IF NOT EXISTS credentials (
   id SERIAL PRIMARY KEY,
   username TEXT NOT NULL DEFAULT 'admin',
   password TEXT NOT NULL DEFAULT 'vindhu@2025',
@@ -43,7 +45,26 @@ CREATE TABLE IF NOT EXISTS orders (
   notes TEXT DEFAULT '',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
-);`;
+);
+
+CREATE TABLE IF NOT EXISTS settings (
+  id SERIAL PRIMARY KEY,
+  upi_id TEXT DEFAULT '',
+  upi_name TEXT DEFAULT 'Hotel Vindhu Bhojanam',
+  upi_note TEXT DEFAULT 'Pay for your food order',
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Disable Row Level Security (allows app to read/write)
+ALTER TABLE credentials DISABLE ROW LEVEL SECURITY;
+ALTER TABLE menu_items DISABLE ROW LEVEL SECURITY;
+ALTER TABLE orders DISABLE ROW LEVEL SECURITY;
+ALTER TABLE settings DISABLE ROW LEVEL SECURITY;
+
+-- Insert default admin login
+INSERT INTO credentials (username, password, owner_name, email)
+VALUES ('admin', 'vindhu@2025', 'Hotel Vindhu Bhojanam', 'vindhu@gmail.com')
+ON CONFLICT DO NOTHING;`;
 
 export default function DBSetup({ onConnected }: { onConnected: () => void }) {
   const [status, setStatus] = useState<HealthStatus | null>(null);

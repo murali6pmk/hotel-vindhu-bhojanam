@@ -11,8 +11,6 @@ export function getSupabase() {
   return supabase;
 }
 
-// Supabase tables are created via their dashboard SQL editor
-// This function checks if tables exist and seeds default data
 export async function seedDefaults() {
   const db = getSupabase();
 
@@ -20,10 +18,8 @@ export async function seedDefaults() {
   const { count: credCount } = await db.from('credentials').select('*', { count: 'exact', head: true });
   if (credCount === 0) {
     await db.from('credentials').insert({
-      username: 'admin',
-      password: 'vindhu@2025',
-      owner_name: 'Hotel Vindhu Bhojanam',
-      email: 'vindhu@gmail.com'
+      username: 'admin', password: 'vindhu@2025',
+      owner_name: 'Hotel Vindhu Bhojanam', email: 'vindhu@gmail.com'
     });
   }
 
@@ -48,6 +44,12 @@ export async function seedDefaults() {
       { id:'b3', name:'Buttermilk', telugu:'మజ్జిగ', price:20, description:'Chilled spiced buttermilk with curry leaves', img:'/images/food1.jpg', popular:false, category:'beverages', available:true },
       { id:'b4', name:'Fresh Lime Soda', telugu:'నిమ్మకాయ సోడా', price:30, description:'Sweet or salted fresh lime with soda', img:'/images/food6.jpg', popular:false, category:'beverages', available:true },
     ]);
+  }
+
+  // Seed settings if empty
+  const { count: settingsCount } = await db.from('settings').select('*', { count: 'exact', head: true }).catch(() => ({ count: 0 }));
+  if (!settingsCount || settingsCount === 0) {
+    await db.from('settings').insert({ upi_id: '', upi_name: 'Hotel Vindhu Bhojanam', upi_note: 'Pay for your food order' }).catch(() => {});
   }
 }
 

@@ -115,6 +115,21 @@ export async function deleteOrder(id: string) {
   return http<{ ok: boolean }>(`${BASE}/orders/${id}`, { method: 'DELETE' });
 }
 
+// ---- Settings / UPI ----
+export type UpiSettings = {
+  upi_id: string;
+  upi_name: string;
+  upi_note: string;
+};
+
+export async function getSettings(): Promise<UpiSettings> {
+  return http<UpiSettings>(`${BASE}/settings`);
+}
+
+export async function saveSettings(settings: UpiSettings) {
+  return http<{ ok: boolean }>(`${BASE}/settings`, { method: 'PUT', body: JSON.stringify(settings) });
+}
+
 // ---- Helpers ----
 export function generateId(prefix: string): string {
   return `${prefix}${Date.now().toString(36).toUpperCase()}`;
