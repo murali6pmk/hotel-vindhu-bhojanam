@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Eye, EyeOff, LogIn, Lock, User, Leaf } from 'lucide-react';
-import { login } from '../lib/api';
+
 
 interface Props {
   onLogin: () => void;
@@ -19,7 +19,12 @@ export default function AdminLogin({ onLogin }: Props) {
     setLoading(true);
     setError('');
     try {
-      const result = await login(username, password);
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const result = await res.json();
       if (result.ok) {
         sessionStorage.setItem('vb_admin_auth', 'true');
         onLogin();
@@ -29,7 +34,7 @@ export default function AdminLogin({ onLogin }: Props) {
         setTimeout(() => setShake(false), 600);
       }
     } catch (err: any) {
-      setError(err.message || 'Connection error. Please try again.');
+      setError('Connection error. Please try again.');
       setShake(true);
       setTimeout(() => setShake(false), 600);
     } finally {

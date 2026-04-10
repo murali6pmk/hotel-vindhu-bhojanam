@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Minus, ShoppingBag } from 'lucide-react';
-import { getMenuItems, type MenuItem } from '../lib/api';
+import { type MenuItem } from '../lib/api';
 import { useCart } from '../context/CartContext';
 
 const menuCategories = [
@@ -13,10 +13,15 @@ const menuCategories = [
 export default function MenuSection() {
   const [activeCategory, setActiveCategory] = useState('meals');
   const [allItems, setAllItems] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const { addToCart, updateQty, cart, setIsOpen } = useCart();
 
   useEffect(() => {
-    getMenuItems().then(setAllItems).catch(console.error);
+    setLoading(true);
+    fetch('/api/menu')
+      .then(r => r.json())
+      .then(data => { setAllItems(Array.isArray(data) ? data : []); setLoading(false); })
+      .catch(() => { setLoading(false); });
   }, []);
 
   const items = allItems.filter(i => i.category === activeCategory && i.available);
@@ -60,8 +65,18 @@ export default function MenuSection() {
           ))}
         </div>
 
+        {/* Loading */}
+        {loading && (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <div className="w-12 h-12 border-2 border-gold/30 border-t-gold rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-cream/50 text-sm">Loading menu...</p>
+            </div>
+          </div>
+        )}
+
         {/* Menu Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {!loading && <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {items.map((item, i) => {
             const qty = getQty(item.id);
             return (
@@ -114,7 +129,7 @@ export default function MenuSection() {
           {items.length === 0 && (
             <div className="col-span-4 text-center py-16 text-cream/40">No items available in this category right now.</div>
           )}
-        </div>
+        </div>}
 
         {/* View Cart Banner */}
         <div className="text-center mt-12 fade-up">
