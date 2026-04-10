@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Menu, X, Phone, MapPin } from 'lucide-react';
+import { Menu, X, Phone, MapPin, ShieldCheck } from 'lucide-react';
 
 const navItems = [
   { id: 'overview', label: 'Overview' },
@@ -82,6 +82,19 @@ export default function Navbar({ activeSection, setActiveSection }: NavbarProps)
             <MapPin size={14} />
             <span>Directions</span>
           </button>
+          <a
+            href="/admin"
+            className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 hover:scale-105"
+            style={{
+              background: 'linear-gradient(135deg, #2c1a0e, #1a0f06)',
+              border: '1px solid rgba(212,160,23,0.5)',
+              color: '#d4a017',
+              boxShadow: '0 0 15px rgba(212,160,23,0.15)',
+            }}
+          >
+            <ShieldCheck size={14} />
+            <span>Admin Portal</span>
+          </a>
         </div>
 
         {/* Mobile menu toggle */}
@@ -113,6 +126,18 @@ export default function Navbar({ activeSection, setActiveSection }: NavbarProps)
               📍 Map
             </a>
           </div>
+          <a
+            href="/admin"
+            className="mt-2 w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-semibold transition-all"
+            style={{
+              background: 'linear-gradient(135deg, #2c1a0e, #1a0f06)',
+              border: '1px solid rgba(212,160,23,0.5)',
+              color: '#d4a017',
+            }}
+          >
+            <ShieldCheck size={14} />
+            Admin Portal
+          </a>
         </div>
       )}
     </nav>
