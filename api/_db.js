@@ -15,8 +15,8 @@ export async function seedDefaults() {
   const db = getSupabase();
 
   // Seed credentials if empty
-  const { count: credCount } = await db.from('credentials').select('*', { count: 'exact', head: true });
-  if (credCount === 0) {
+  const credRes = await db.from('credentials').select('*', { count: 'exact', head: true });
+  if ((credRes.count || 0) === 0) {
     await db.from('credentials').insert({
       username: 'admin', password: 'vindhu@2025',
       owner_name: 'Hotel Vindhu Bhojanam', email: 'vindhu@gmail.com'
@@ -24,8 +24,8 @@ export async function seedDefaults() {
   }
 
   // Seed menu items if empty
-  const { count: menuCount } = await db.from('menu_items').select('*', { count: 'exact', head: true });
-  if (menuCount === 0) {
+  const menuRes = await db.from('menu_items').select('*', { count: 'exact', head: true });
+  if ((menuRes.count || 0) === 0) {
     await db.from('menu_items').insert([
       { id:'m1', name:'Vindhu Bhojanam Thali', telugu:'విందు భోజనం థాలీ', price:120, description:'Full traditional Andhra meal with rice, sambar, rasam, curries, pickle & papad', img:'/images/food1.jpg', popular:true, category:'meals', available:true },
       { id:'m2', name:'Mini Meals', telugu:'మినీ మీల్స్', price:70, description:'Rice with 2 curries, sambar, rasam and curd', img:'/images/food4.jpg', popular:false, category:'meals', available:true },
@@ -45,23 +45,21 @@ export async function seedDefaults() {
       { id:'b4', name:'Fresh Lime Soda', telugu:'నిమ్మకాయ సోడా', price:30, description:'Sweet or salted fresh lime with soda', img:'/images/food6.jpg', popular:false, category:'beverages', available:true },
     ]);
   }
-
-  // Seed settings if empty
-  const { count: settingsCount } = await db.from('settings').select('*', { count: 'exact', head: true }).catch(() => ({ count: 0 }));
-  if (!settingsCount || settingsCount === 0) {
-    await db.from('settings').insert({ upi_id: '', upi_name: 'Hotel Vindhu Bhojanam', upi_note: 'Pay for your food order' }).catch(() => {});
-  }
 }
 
 export function toMenuItem(r) {
-  return { id:r.id, name:r.name, telugu:r.telugu, price:Number(r.price), desc:r.description, img:r.img, popular:Boolean(r.popular), category:r.category, available:Boolean(r.available) };
+  return {
+    id: r.id, name: r.name, telugu: r.telugu,
+    price: Number(r.price), desc: r.description, img: r.img,
+    popular: Boolean(r.popular), category: r.category, available: Boolean(r.available)
+  };
 }
 
 export function toOrder(r) {
   return {
-    id:r.id, customerName:r.customer_name, customerPhone:r.customer_phone,
-    tableNo:r.table_no, items:r.items||[], total:Number(r.total),
-    status:r.status, paymentStatus:r.payment_status, paymentMethod:r.payment_method,
-    notes:r.notes, createdAt:r.created_at, updatedAt:r.updated_at,
+    id: r.id, customerName: r.customer_name, customerPhone: r.customer_phone,
+    tableNo: r.table_no, items: r.items || [], total: Number(r.total),
+    status: r.status, paymentStatus: r.payment_status, paymentMethod: r.payment_method,
+    notes: r.notes, createdAt: r.created_at, updatedAt: r.updated_at,
   };
 }

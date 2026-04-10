@@ -9,21 +9,24 @@ export default async function handler(req, res) {
     const db = getSupabase();
     await seedDefaults();
     if (req.method === 'GET') {
-      const { data } = await db.from('orders').select('*').order('created_at', { ascending: false });
-      res.status(200).json((data||[]).map(toOrder));
+      const { data, error } = await db.from('orders').select('*').order('created_at', { ascending: false });
+      if (error) throw new Error(error.message);
+      res.status(200).json((data || []).map(toOrder));
     } else if (req.method === 'POST') {
       const { id, customerName, customerPhone, tableNo, items, total, status, paymentStatus, paymentMethod, notes } = req.body;
-      await db.from('orders').insert({
-        id, customer_name:customerName, customer_phone:customerPhone||'',
-        table_no:tableNo, items:items||[], total,
-        status:status||'pending', payment_status:paymentStatus||'unpaid',
-        payment_method:paymentMethod||'', notes:notes||''
+      const { error } = await db.from('orders').insert({
+        id, customer_name: customerName, customer_phone: customerPhone || '',
+        table_no: tableNo, items: items || [], total,
+        status: status || 'pending', payment_status: paymentStatus || 'unpaid',
+        payment_method: paymentMethod || '', notes: notes || ''
       });
+      if (error) throw new Error(error.message);
       res.status(200).json({ ok: true });
     } else {
       res.status(405).json({ error: 'Method not allowed' });
     }
   } catch (err) {
+    console.error('Orders error:', err.message);
     res.status(500).json({ error: err.message });
   }
 }

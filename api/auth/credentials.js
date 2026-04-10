@@ -8,22 +8,24 @@ export default async function handler(req, res) {
   try {
     const db = getSupabase();
     if (req.method === 'GET') {
-      const { data } = await db.from('credentials').select('username,owner_name,email').limit(1);
-      res.status(200).json(data?.[0] || { username:'admin', owner_name:'', email:'' });
+      const { data, error } = await db.from('credentials').select('username,owner_name,email').limit(1);
+      if (error) throw new Error(error.message);
+      res.status(200).json(data?.[0] || { username: 'admin', owner_name: '', email: '' });
     } else if (req.method === 'PUT') {
       const { username, password, owner_name, email } = req.body;
       if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
-      const { count } = await db.from('credentials').select('*', { count:'exact', head:true });
-      if (count === 0) {
-        await db.from('credentials').insert({ username, password, owner_name:owner_name||'', email:email||'' });
+      const { count } = await db.from('credentials').select('*', { count: 'exact', head: true });
+      if ((count || 0) === 0) {
+        await db.from('credentials').insert({ username, password, owner_name: owner_name || '', email: email || '' });
       } else {
-        await db.from('credentials').update({ username, password, owner_name:owner_name||'', email:email||'', updated_at: new Date().toISOString() }).gte('id', 0);
+        await db.from('credentials').update({ username, password, owner_name: owner_name || '', email: email || '', updated_at: new Date().toISOString() }).gte('id', 0);
       }
       res.status(200).json({ ok: true });
     } else {
       res.status(405).json({ error: 'Method not allowed' });
     }
   } catch (err) {
+    console.error('Credentials error:', err.message);
     res.status(500).json({ error: err.message });
   }
 }

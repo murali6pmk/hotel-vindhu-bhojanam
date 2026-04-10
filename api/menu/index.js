@@ -9,19 +9,23 @@ export default async function handler(req, res) {
     const db = getSupabase();
     await seedDefaults();
     if (req.method === 'GET') {
-      const { data } = await db.from('menu_items').select('*').order('category').order('created_at');
-      res.status(200).json((data||[]).map(toMenuItem));
+      const { data, error } = await db.from('menu_items').select('*').order('category').order('created_at');
+      if (error) throw new Error(error.message);
+      res.status(200).json((data || []).map(toMenuItem));
     } else if (req.method === 'POST') {
       const { id, name, telugu, price, desc, img, popular, category, available } = req.body;
-      await db.from('menu_items').upsert({
-        id, name, telugu:telugu||'', price, description:desc||'',
-        img:img||'/images/food1.jpg', popular:!!popular, category, available:available!==false
+      const { error } = await db.from('menu_items').upsert({
+        id, name, telugu: telugu || '', price,
+        description: desc || '', img: img || '/images/food1.jpg',
+        popular: !!popular, category, available: available !== false
       });
+      if (error) throw new Error(error.message);
       res.status(200).json({ ok: true });
     } else {
       res.status(405).json({ error: 'Method not allowed' });
     }
   } catch (err) {
+    console.error('Menu error:', err.message);
     res.status(500).json({ error: err.message });
   }
 }

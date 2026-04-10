@@ -10,19 +10,23 @@ export default async function handler(req, res) {
     const db = getSupabase();
     if (req.method === 'PUT') {
       const { name, telugu, price, desc, img, popular, category, available } = req.body;
-      await db.from('menu_items').update({
-        name, telugu:telugu||'', price, description:desc||'',
-        img:img||'/images/food1.jpg', popular:!!popular,
-        category, available:available!==false, updated_at:new Date().toISOString()
+      const { error } = await db.from('menu_items').update({
+        name, telugu: telugu || '', price,
+        description: desc || '', img: img || '/images/food1.jpg',
+        popular: !!popular, category, available: available !== false,
+        updated_at: new Date().toISOString()
       }).eq('id', id);
+      if (error) throw new Error(error.message);
       res.status(200).json({ ok: true });
     } else if (req.method === 'DELETE') {
-      await db.from('menu_items').delete().eq('id', id);
+      const { error } = await db.from('menu_items').delete().eq('id', id);
+      if (error) throw new Error(error.message);
       res.status(200).json({ ok: true });
     } else {
       res.status(405).json({ error: 'Method not allowed' });
     }
   } catch (err) {
+    console.error('Menu item error:', err.message);
     res.status(500).json({ error: err.message });
   }
 }

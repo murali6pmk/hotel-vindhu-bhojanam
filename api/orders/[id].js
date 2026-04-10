@@ -20,15 +20,18 @@ export default async function handler(req, res) {
       if (b.paymentStatus !== undefined) update.payment_status = b.paymentStatus;
       if (b.paymentMethod !== undefined) update.payment_method = b.paymentMethod;
       if (b.notes !== undefined) update.notes = b.notes;
-      await db.from('orders').update(update).eq('id', id);
+      const { error } = await db.from('orders').update(update).eq('id', id);
+      if (error) throw new Error(error.message);
       res.status(200).json({ ok: true });
     } else if (req.method === 'DELETE') {
-      await db.from('orders').delete().eq('id', id);
+      const { error } = await db.from('orders').delete().eq('id', id);
+      if (error) throw new Error(error.message);
       res.status(200).json({ ok: true });
     } else {
       res.status(405).json({ error: 'Method not allowed' });
     }
   } catch (err) {
+    console.error('Order update error:', err.message);
     res.status(500).json({ error: err.message });
   }
 }
