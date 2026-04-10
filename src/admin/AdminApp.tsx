@@ -2,29 +2,26 @@ import { useState, useEffect } from 'react';
 import AdminLogin from './AdminLogin';
 import AdminDashboard from './AdminDashboard';
 
+type AppState = 'checking' | 'login' | 'dashboard';
+
 export default function AdminApp() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [checking, setChecking] = useState(true);
+  const [state, setState] = useState<AppState>('checking');
 
   useEffect(() => {
     const auth = sessionStorage.getItem('vb_admin_auth');
     if (auth === 'true') {
-      setIsAuthenticated(true);
+      setState('dashboard');
+    } else {
+      setState('login');
     }
-    setChecking(false);
   }, []);
-
-  const handleLogin = () => {
-    sessionStorage.setItem('vb_admin_auth', 'true');
-    setIsAuthenticated(true);
-  };
 
   const handleLogout = () => {
     sessionStorage.removeItem('vb_admin_auth');
-    setIsAuthenticated(false);
+    setState('login');
   };
 
-  if (checking) {
+  if (state === 'checking') {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
@@ -44,8 +41,15 @@ export default function AdminApp() {
     );
   }
 
-  if (!isAuthenticated) {
-    return <AdminLogin onLogin={handleLogin} />;
+  if (state === 'login') {
+    return (
+      <AdminLogin
+        onLogin={() => {
+          sessionStorage.setItem('vb_admin_auth', 'true');
+          setState('dashboard');
+        }}
+      />
+    );
   }
 
   return <AdminDashboard onLogout={handleLogout} />;
